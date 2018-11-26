@@ -1,10 +1,13 @@
 var express = require('express');
 var bodyParser = require('body-parser')
+var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var mongoose = require('mongoose');
 
-var app = express();  
+const options = {
+  useNewUrlParser: true,
+};
 
 app.use(express.static(__dirname));
 app.use(bodyParser.json());
@@ -15,12 +18,10 @@ var Message = mongoose.model('Message',{
   message : String
 })
 
-var dbUrl = 'mongodb://djankooo:1qaz!QAZ@ds143893.mlab.com:43893/chatapp'   // mongodb://<dbuser>:<dbpassword>@ds143893.mlab.com:43893/chatapp
+var dbUrl = 'mongodb://djankooo:1qaz!QAZ@ds143893.mlab.com:43893/chatapp'
 
 app.get('/messages', (req, res) => {
   Message.find({},(err, messages)=> {
-    console.log("req: " + res)
-    console.log("res: " + res)
     res.send(messages);
   })
 })
@@ -41,10 +42,10 @@ app.post('/messages', async (req, res) => {
     var savedMessage = await message.save()
       console.log('saved');
 
-    var censored = await Message.findOne({message:'badword'});
-      if(censored)
-        await Message.remove({_id: censored.id})
-      else
+    //var censored = await Message.findOne({message:'badword'});
+     // if(censored)
+     //   await Message.remove({_id: censored.id})
+    //  else
         io.emit('message', req.body);
       res.sendStatus(200);
   }
@@ -52,23 +53,23 @@ app.post('/messages', async (req, res) => {
     res.sendStatus(500);
     return console.log('error',error);
   }
-  finally{
-    console.log('Message Posted')
-  }
-
 })
 
 
 
 io.on('connection', () =>{
-  console.log('-> User is connected')
+  console.log('a user is connected')
 })
 
+//mongoose.connect(dbUrl ,(err) => { // stara wersja 
+//  console.log('mongodb connected',err);
+//})
 
-mongoose.connect(dbUrl ,{useNewUrlParser: true} ,(err) => {
-  console.log('-> mongodb connected',err);
-})
+mongoose.connect(dbUrl, options).then(                        // nowa wersja
+  () => { console.log("Mongoose conected!") },
+  err => { console.log("Connecting with Mongoose failed!") }
+);                          
 
 var server = http.listen(3000, () => {
-  console.log('-> server is running on port', server.address().port);
+  console.log('server is running on port', server.address().port);
 });
